@@ -48,14 +48,33 @@ Cluster = {
     }
   },
 
+  startWorker: function() {
+    if (_.size(cluster.workers) >= settings.count) {
+      return;
+    }
+
+    self = this;
+
+    var worker = cluster.fork( {PORT: 0, VELOCITY: 0} );
+    worker.on('exit', function() {
+      self.log('Worker process killed.');
+      self.restartWorker();
+    });
+  },
+
+  restartWorker: function() {
+    self = this;
+    setTimeout(function() {
+      self.log('Restarting worker process.');
+      self.startWorker();
+    });
+  },
+
   start: function() {
     self = this;
     if (_.size(cluster.workers) === 0) {
       for (var i = 0; i < settings.count; i++) {
-        var worker = cluster.fork( {PORT: 0, VELOCITY: 0} );
-        worker.on('exit', function() {
-          self.log('Worker process killed.');
-        });
+        this.startWorker();
       }
     } else {
       this.log('Workers have already been started.')
